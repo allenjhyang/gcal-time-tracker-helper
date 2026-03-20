@@ -60,28 +60,16 @@ function injectTracker(popup) {
     const tracker = document.createElement('div');
     tracker.id = 'gcal-tracker-buttons';
 
-    const row = document.createElement('div');
-    row.className = 'gcal-tracker-row';
-
-    const icon = document.createElement('i');
-    icon.className = 'google-material-icons notranslate gcal-tracker-icon';
-    icon.setAttribute('aria-hidden', 'true');
-    icon.textContent = 'timer';
-    row.appendChild(icon);
-
-    const content = document.createElement('div');
-    content.className = 'gcal-tracker-content';
-
     const header = document.createElement('div');
     header.className = 'gcal-tracker-header';
     header.textContent = 'Time tracking';
-    content.appendChild(header);
+    tracker.appendChild(header);
 
     if (!calendarId) {
       const warning = document.createElement('div');
       warning.className = 'gcal-tracker-warning';
       warning.textContent = 'Set a calendar in extension options first';
-      content.appendChild(warning);
+      tracker.appendChild(warning);
     }
 
     const pills = document.createElement('div');
@@ -103,9 +91,7 @@ function injectTracker(popup) {
       pills.appendChild(btn);
     });
 
-    content.appendChild(pills);
-    row.appendChild(content);
-    tracker.appendChild(row);
+    tracker.appendChild(pills);
 
     container.appendChild(tracker);
     currentTracker = tracker;
