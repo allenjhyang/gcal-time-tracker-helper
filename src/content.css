@@ -1,20 +1,18 @@
 #gcal-tracker-buttons {
   padding: 8px 0 4px;
-  border-top: 1px solid #e0e0e0;
   font-family: 'Google Sans', Roboto, Arial, sans-serif;
 }
 
 .gcal-tracker-row {
   display: flex;
-  align-items: flex-start;
-  padding: 4px 16px;
+  align-items: center;
+  padding: 4px 16px 4px 20px;
 }
 
 .gcal-tracker-icon {
   font-size: 20px;
   color: #5f6368;
-  margin-right: 12px;
-  margin-top: 2px;
+  margin-right: 16px;
   flex-shrink: 0;
   width: 24px;
   text-align: center;
