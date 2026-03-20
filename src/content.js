@@ -8,7 +8,8 @@ function detectPopup() {
       for (const node of mutation.addedNodes) {
         if (node.nodeType !== Node.ELEMENT_NODE) continue;
         const popup = findQuickCreatePopup(node);
-        if (popup && !currentSidecar) {
+        if (popup) {
+          removeSidecar(); // clean up any existing sidecar
           injectSidecar(popup);
         }
       }
@@ -104,7 +105,6 @@ function toMinutes(raw, meridiem) {
 }
 
 function extractDateFromPopup() {
-  const headers = document.querySelectorAll('[data-datekey]');
   const selected = document.querySelector('.yDmH0d[data-datekey]');
   if (selected) {
     const dateKey = selected.getAttribute('data-datekey');
@@ -214,8 +214,16 @@ async function handleProjectClick(projectName, popup, calendarId) {
         if (clickedBtn) clickedBtn.textContent = projectName;
         buttons.forEach(btn => { btn.disabled = false; });
       } else {
-        closeNativePopup(popup);
-        removeSidecar();
+        // Show success feedback briefly before closing
+        if (clickedBtn) {
+          clickedBtn.textContent = 'Created!';
+          clickedBtn.style.background = '#ceead6';
+          clickedBtn.style.color = '#137333';
+        }
+        setTimeout(() => {
+          closeNativePopup(popup);
+          removeSidecar();
+        }, 600);
       }
     }
   );
