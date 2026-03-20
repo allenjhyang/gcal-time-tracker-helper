@@ -125,7 +125,15 @@ function delay(ms) {
 }
 
 async function selectCalendar(popup, calendarId) {
-  // The calendar dropdown has id="xCalSel". Options have data-value = btoa(calendarId).
+  // The calendar section is inside a collapsed expandable section.
+  // First, expand it by clicking the calendar row button (jsname="F49jqd").
+  const expandBtn = popup.querySelector('button[jsname="F49jqd"]');
+  if (expandBtn && expandBtn.getAttribute('aria-expanded') === 'false') {
+    expandBtn.click();
+    await delay(200);
+  }
+
+  // Now find the calendar dropdown (id="xCalSel")
   const calendarDropdown = popup.querySelector('#xCalSel');
   if (!calendarDropdown) return false;
 
@@ -134,7 +142,9 @@ async function selectCalendar(popup, calendarId) {
   // Check if the right calendar is already selected
   const currentSelection = calendarDropdown.querySelector('[role="option"][aria-selected="true"]');
   if (currentSelection && currentSelection.getAttribute('data-value') === encodedId) {
-    return true; // already selected
+    // Collapse the section back
+    if (expandBtn) expandBtn.click();
+    return true;
   }
 
   // Open the dropdown by clicking the combobox
