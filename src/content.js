@@ -241,8 +241,9 @@ async function handleProjectClick(projectName, popup, calendarId) {
           clickedBtn.style.color = '#137333';
         }
         setTimeout(() => {
-          closeNativePopup(popup);
           removeSidecar();
+          // Reload so GCal fetches the newly created event
+          location.reload();
         }, 600);
       }
     }
