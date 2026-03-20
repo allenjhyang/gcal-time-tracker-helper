@@ -1,16 +1,35 @@
 #gcal-tracker-buttons {
-  padding: 8px 16px 12px;
+  padding: 8px 0 4px;
   border-top: 1px solid #e0e0e0;
   font-family: 'Google Sans', Roboto, Arial, sans-serif;
 }
 
-.gcal-tracker-header {
-  font-size: 11px;
-  font-weight: 500;
+.gcal-tracker-row {
+  display: flex;
+  align-items: flex-start;
+  padding: 4px 16px;
+}
+
+.gcal-tracker-icon {
+  font-size: 20px;
   color: #5f6368;
+  margin-right: 12px;
+  margin-top: 2px;
+  flex-shrink: 0;
+  width: 24px;
+  text-align: center;
+}
+
+.gcal-tracker-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.gcal-tracker-header {
+  font-size: 13px;
+  font-weight: 400;
+  color: #3c4043;
   margin-bottom: 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 .gcal-tracker-warning {
@@ -19,10 +38,15 @@
   margin-bottom: 6px;
 }
 
+.gcal-tracker-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
 .gcal-tracker-btn {
   display: inline-block;
   padding: 4px 10px;
-  margin: 0 4px 4px 0;
   border: 1px solid #dadce0;
   border-radius: 16px;
   background: #fff;
@@ -30,20 +54,14 @@
   font-size: 12px;
   font-family: inherit;
   cursor: pointer;
-  transition: background-color 0.15s, border-color 0.15s;
+  transition: opacity 0.15s, filter 0.15s;
 }
 
 .gcal-tracker-btn:hover {
-  background: #e8f0fe;
-  border-color: #1a73e8;
+  filter: brightness(0.9);
 }
 
 .gcal-tracker-btn-active {
-  background: #1a73e8;
-  color: #fff;
-  border-color: #1a73e8;
-}
-
-.gcal-tracker-btn-active:hover {
-  background: #1557b0;
+  outline: 2px solid #1a73e8;
+  outline-offset: 1px;
 }

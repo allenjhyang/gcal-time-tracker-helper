@@ -26,6 +26,25 @@ function findQuickCreatePopup(node) {
   return null;
 }
 
+function getCalendarColor(popup) {
+  // Try to read the calendar color from the color swatch in the popup
+  const swatch = popup.querySelector('.tWokJb');
+  if (swatch) return swatch.style.backgroundColor;
+  // Fallback: read from the color picker's selected color
+  const colorBtn = popup.querySelector('[jsname="QPiGnd"]');
+  if (colorBtn) return colorBtn.style.backgroundColor;
+  return null;
+}
+
+function getContrastColor(bgColor) {
+  // Parse rgb(r, g, b) and compute luminance to pick black or white text
+  const match = bgColor.match(/(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+  if (!match) return '#000';
+  const [, r, g, b] = match.map(Number);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.5 ? '#000' : '#fff';
+}
+
 function injectTracker(popup) {
   chrome.storage.sync.get({ projects: [], calendarId: '' }, ({ projects, calendarId }) => {
     if (projects.length === 0) return;
@@ -34,31 +53,59 @@ function injectTracker(popup) {
     const scrollable = popup.querySelector('[data-bubble-scrollable-root]');
     const container = scrollable || popup;
 
+    // Get the calendar color for pill styling
+    const calColor = getCalendarColor(popup);
+    const textColor = calColor ? getContrastColor(calColor) : null;
+
     const tracker = document.createElement('div');
     tracker.id = 'gcal-tracker-buttons';
 
+    const row = document.createElement('div');
+    row.className = 'gcal-tracker-row';
+
+    const icon = document.createElement('i');
+    icon.className = 'google-material-icons notranslate gcal-tracker-icon';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.textContent = 'timer';
+    row.appendChild(icon);
+
+    const content = document.createElement('div');
+    content.className = 'gcal-tracker-content';
+
     const header = document.createElement('div');
     header.className = 'gcal-tracker-header';
-    header.textContent = 'Quick Track';
-    tracker.appendChild(header);
+    header.textContent = 'Time tracking';
+    content.appendChild(header);
 
     if (!calendarId) {
       const warning = document.createElement('div');
       warning.className = 'gcal-tracker-warning';
       warning.textContent = 'Set a calendar in extension options first';
-      tracker.appendChild(warning);
+      content.appendChild(warning);
     }
+
+    const pills = document.createElement('div');
+    pills.className = 'gcal-tracker-pills';
 
     projects.forEach(project => {
       const btn = document.createElement('button');
       btn.className = 'gcal-tracker-btn';
       btn.textContent = project;
+      if (calColor) {
+        btn.style.backgroundColor = calColor;
+        btn.style.color = textColor;
+        btn.style.borderColor = calColor;
+      }
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         fillProject(popup, project, calendarId, btn, tracker);
       });
-      tracker.appendChild(btn);
+      pills.appendChild(btn);
     });
+
+    content.appendChild(pills);
+    row.appendChild(content);
+    tracker.appendChild(row);
 
     container.appendChild(tracker);
     currentTracker = tracker;
