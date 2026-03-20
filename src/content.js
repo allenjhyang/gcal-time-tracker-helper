@@ -20,25 +20,45 @@ function detectPopup() {
 }
 
 function findQuickCreatePopup(node) {
-  // Strategy 1: look for data-eventid attribute (GCal uses this on event elements)
-  if (node.matches && node.matches('[data-eventid]')) return node;
-  const found = node.querySelector && node.querySelector('[data-eventid]');
-  if (found) return found;
+  // The quick-create popup is the editing bubble that appears on click+drag.
+  // It contains a "Save" button and "More options" — unlike regular event chips.
+  // We must NOT match on [data-eventid] alone since every event on the calendar has that.
 
-  // Strategy 2: look for the bubble that contains "Save" and "More options"
-  const buttons = node.querySelectorAll && node.querySelectorAll('button');
-  if (buttons) {
-    for (const btn of buttons) {
-      if (btn.textContent.trim() === 'Save') {
-        let container = btn.closest('[role="dialog"], [data-eventid]');
-        if (container) return container;
-        container = btn.parentElement;
-        while (container && container !== document.body) {
-          if (container.offsetWidth > 200 && container.offsetHeight > 100) {
-            return container;
-          }
-          container = container.parentElement;
+  // Look for a newly added element that contains both a "Save" button
+  // and either a contenteditable or input for the event title.
+  const saveBtn = node.querySelector && node.querySelector('button');
+  if (!saveBtn) {
+    // Check if node itself is a button container
+    if (!node.querySelectorAll) return null;
+  }
+
+  const buttons = node.querySelectorAll ? node.querySelectorAll('button') : [];
+  let hasSave = false;
+  for (const btn of buttons) {
+    if (btn.textContent.trim() === 'Save') {
+      hasSave = true;
+      break;
+    }
+  }
+  if (!hasSave) return null;
+
+  // Found a "Save" button — now find the popup container.
+  // Look for role="dialog" first, then walk up to a reasonably-sized container.
+  const dialog = node.closest ? node.closest('[role="dialog"]') : null;
+  if (dialog) return dialog;
+  if (node.matches && node.matches('[role="dialog"]')) return node;
+  const dialogChild = node.querySelector && node.querySelector('[role="dialog"]');
+  if (dialogChild) return dialogChild;
+
+  // Fallback: walk up from the Save button to find a container
+  for (const btn of buttons) {
+    if (btn.textContent.trim() === 'Save') {
+      let container = btn.parentElement;
+      while (container && container !== document.body) {
+        if (container.offsetWidth > 200 && container.offsetHeight > 100) {
+          return container;
         }
+        container = container.parentElement;
       }
     }
   }
