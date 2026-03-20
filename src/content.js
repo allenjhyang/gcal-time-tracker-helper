@@ -141,7 +141,7 @@ async function selectCalendar(popup, calendarId) {
   const calendarDropdown = popup.querySelector('#xCalSel');
   if (!calendarDropdown) return false;
 
-  const encodedId = btoa(calendarId);
+  const encodedId = btoa(calendarId).replace(/=+$/, '');
 
   // Check if the right calendar is already selected
   const currentSelection = calendarDropdown.querySelector('[role="option"][aria-selected="true"]');
