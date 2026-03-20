@@ -2,6 +2,17 @@
 
 let currentSidecar = null;
 
+// Register capture-phase listeners EARLY (before GCal registers its own)
+// to block click-outside-dismissal when interacting with the sidecar.
+let sidecarInteracting = false;
+function earlyBlocker(e) {
+  if (sidecarInteracting && e.target.closest('#gcal-tracker-sidecar')) {
+    e.stopImmediatePropagation();
+  }
+}
+document.addEventListener('mousedown', earlyBlocker, true);
+document.addEventListener('pointerdown', earlyBlocker, true);
+
 function detectPopup() {
   const observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
@@ -66,6 +77,12 @@ function injectSidecar(popup) {
       sidecar.appendChild(warning);
     }
 
+    // Enable the early blocker while interacting with sidecar
+    sidecar.addEventListener('mousedown', () => { sidecarInteracting = true; }, true);
+    sidecar.addEventListener('mouseup', () => { sidecarInteracting = false; }, true);
+    sidecar.addEventListener('pointerdown', () => { sidecarInteracting = true; }, true);
+    sidecar.addEventListener('pointerup', () => { sidecarInteracting = false; }, true);
+
     projects.forEach(project => {
       const btn = document.createElement('button');
       btn.className = 'gcal-tracker-btn';
@@ -73,13 +90,6 @@ function injectSidecar(popup) {
       btn.addEventListener('click', () => handleProjectClick(project, popup, calendarId));
       sidecar.appendChild(btn);
     });
-
-    // Intercept mousedown at capture phase on the sidecar to prevent
-    // GCal's document-level capture listener from seeing it as an
-    // "outside click" and closing the popup.
-    sidecar.addEventListener('mousedown', (e) => {
-      e.stopImmediatePropagation();
-    }, true); // capture phase
 
     document.body.appendChild(sidecar);
     positionSidecar(sidecar, popup);

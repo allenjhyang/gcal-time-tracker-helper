@@ -16,9 +16,16 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://calendar.google.com/*"],
-      "js": ["content.js"],
-      "css": ["content.css"]
+      "matches": [
+        "https://calendar.google.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "run_at": "document_start"
     }
   ],
   "options_ui": {
@@ -26,7 +33,7 @@
     "open_in_tab": true
   },
   "oauth2": {
-    "client_id": "YOUR_CLIENT_ID.apps.googleusercontent.com",
+    "client_id": "959247079853-sp3slrtu0happ3blas0qfq8hn0bi5g65.apps.googleusercontent.com",
     "scopes": [
       "https://www.googleapis.com/auth/calendar"
     ]
