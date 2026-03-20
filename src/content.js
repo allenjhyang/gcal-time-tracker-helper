@@ -79,8 +79,10 @@ function injectSidecar(popup) {
       sidecar.appendChild(btn);
     });
 
+    // Append sidecar INSIDE the dialog so GCal doesn't treat clicks
+    // on it as "outside" clicks that close the popup.
+    popup.appendChild(sidecar);
     positionSidecar(sidecar, popup);
-    document.body.appendChild(sidecar);
     currentSidecar = sidecar;
 
     const cleanupObserver = new MutationObserver(() => {
@@ -94,16 +96,18 @@ function injectSidecar(popup) {
 }
 
 function positionSidecar(sidecar, popup) {
-  const rect = popup.getBoundingClientRect();
-  sidecar.style.position = 'fixed';
-  sidecar.style.top = `${rect.top}px`;
-  sidecar.style.left = `${rect.right + 8}px`;
+  // Sidecar is now a child of the popup, so use absolute positioning
+  // relative to the popup to place it to the right.
+  sidecar.style.position = 'absolute';
+  sidecar.style.top = '0px';
+  sidecar.style.left = `${popup.offsetWidth + 8}px`;
   sidecar.style.zIndex = '9999';
 
   requestAnimationFrame(() => {
     const sidecarRect = sidecar.getBoundingClientRect();
     if (sidecarRect.right > window.innerWidth) {
-      sidecar.style.left = `${rect.left - sidecarRect.width - 8}px`;
+      // Place to the left instead
+      sidecar.style.left = `${-sidecar.offsetWidth - 8}px`;
     }
   });
 }
