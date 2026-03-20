@@ -125,12 +125,16 @@ function delay(ms) {
 }
 
 async function selectCalendar(popup, calendarId) {
-  // The calendar section is inside a collapsed expandable section.
-  // First, expand it by clicking the calendar row button (jsname="F49jqd").
-  const expandBtn = popup.querySelector('button[jsname="F49jqd"]');
-  if (expandBtn && expandBtn.getAttribute('aria-expanded') === 'false') {
-    expandBtn.click();
-    await delay(200);
+  // The calendar section is collapsed by default. We need to expand it
+  // by clicking the row that contains data-key="calendar".
+  // Find the clickable span with data-key="calendar" and click its parent button.
+  const calendarLink = popup.querySelector('[data-key="calendar"]');
+  if (calendarLink) {
+    const expandBtn = calendarLink.closest('button');
+    if (expandBtn && expandBtn.getAttribute('aria-expanded') === 'false') {
+      expandBtn.click();
+      await delay(300);
+    }
   }
 
   // Now find the calendar dropdown (id="xCalSel")
@@ -142,9 +146,7 @@ async function selectCalendar(popup, calendarId) {
   // Check if the right calendar is already selected
   const currentSelection = calendarDropdown.querySelector('[role="option"][aria-selected="true"]');
   if (currentSelection && currentSelection.getAttribute('data-value') === encodedId) {
-    // Collapse the section back
-    if (expandBtn) expandBtn.click();
-    return true;
+    return true; // already selected
   }
 
   // Open the dropdown by clicking the combobox
