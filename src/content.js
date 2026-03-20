@@ -70,7 +70,12 @@ function injectSidecar(popup) {
       const btn = document.createElement('button');
       btn.className = 'gcal-tracker-btn';
       btn.textContent = project;
-      btn.addEventListener('click', () => handleProjectClick(project, popup, calendarId));
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        handleProjectClick(project, popup, calendarId);
+      });
+      btn.addEventListener('mousedown', (e) => e.stopPropagation());
       sidecar.appendChild(btn);
     });
 
