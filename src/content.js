@@ -127,8 +127,8 @@ function delay(ms) {
 async function selectCalendar(popup, calendarId) {
   // The calendar section is collapsed by default. We need to expand it
   // by clicking the row that contains data-key="calendar".
-  // Find the clickable span with data-key="calendar" and click its parent button.
-  const calendarLink = popup.querySelector('[data-key="calendar"]');
+  // Use document-level search since GCal may re-render the popup.
+  const calendarLink = document.querySelector('[role="dialog"][data-chips-dialog="true"] [data-key="calendar"]');
   if (calendarLink) {
     const expandBtn = calendarLink.closest('button');
     if (expandBtn && expandBtn.getAttribute('aria-expanded') === 'false') {
@@ -137,8 +137,8 @@ async function selectCalendar(popup, calendarId) {
     }
   }
 
-  // Now find the calendar dropdown (id="xCalSel")
-  const calendarDropdown = popup.querySelector('#xCalSel');
+  // Now find the calendar dropdown (id="xCalSel") from document
+  const calendarDropdown = document.querySelector('#xCalSel');
   if (!calendarDropdown) return false;
 
   const encodedId = btoa(calendarId).replace(/=+$/, '');
@@ -185,16 +185,7 @@ async function handleProjectClick(projectName, popup, calendarId) {
   if (clickedBtn) clickedBtn.textContent = 'Creating...';
 
   try {
-    // 1. Set the event title
-    const titleInput = popup.querySelector('input[aria-label="Add title"]');
-    if (!titleInput) {
-      alert('Could not find the title input. GCal may have changed.');
-      resetButtons(buttons, clickedBtn, projectName);
-      return;
-    }
-    setNativeInputValue(titleInput, projectName);
-
-    // 2. Select the time-tracking calendar
+    // 1. Select the time-tracking calendar FIRST (this may re-render the popup)
     const calendarSelected = await selectCalendar(popup, calendarId);
     if (!calendarSelected) {
       alert('Could not find the selected calendar in the dropdown. Check your extension options.');
@@ -202,8 +193,26 @@ async function handleProjectClick(projectName, popup, calendarId) {
       return;
     }
 
-    // 3. Click Save
-    const saveBtn = popup.querySelector('button[jsname="x8hlje"]');
+    // 2. Re-find the dialog (GCal re-renders during calendar selection)
+    await delay(200);
+    const currentDialog = document.querySelector('[role="dialog"][data-chips-dialog="true"]');
+    if (!currentDialog) {
+      alert('Dialog disappeared. Please try again.');
+      resetButtons(buttons, clickedBtn, projectName);
+      return;
+    }
+
+    // 3. Set the event title on the fresh DOM
+    const titleInput = currentDialog.querySelector('input[aria-label="Add title"]');
+    if (!titleInput) {
+      alert('Could not find the title input. GCal may have changed.');
+      resetButtons(buttons, clickedBtn, projectName);
+      return;
+    }
+    setNativeInputValue(titleInput, projectName);
+
+    // 4. Click Save
+    const saveBtn = currentDialog.querySelector('button[jsname="x8hlje"]');
     if (!saveBtn) {
       alert('Could not find the Save button. GCal may have changed.');
       resetButtons(buttons, clickedBtn, projectName);
