@@ -6,8 +6,30 @@
   <link rel="stylesheet" href="options.css">
 </head>
 <body>
-  <h1>GCal Time Tracker Helper</h1>
-  <div id="app"></div>
+  <div class="container">
+    <h1>GCal Time Tracker Helper</h1>
+
+    <section>
+      <h2>Time Tracking Calendar</h2>
+      <p>Events will be created on this calendar.</p>
+      <button id="auth-btn">Connect Google Account</button>
+      <select id="calendar-select" disabled>
+        <option value="">Connect account first...</option>
+      </select>
+    </section>
+
+    <section>
+      <h2>Projects</h2>
+      <p>These will appear as quick-create buttons on Google Calendar.</p>
+      <div id="project-list"></div>
+      <div class="add-project">
+        <input type="text" id="new-project" placeholder="e.g. [Research]">
+        <button id="add-project-btn">Add</button>
+      </div>
+    </section>
+
+    <div id="status"></div>
+  </div>
   <script src="options.js"></script>
 </body>
 </html>
