@@ -127,63 +127,29 @@ function delay(ms) {
 async function selectCalendar(popup, calendarId) {
   const encodedId = btoa(calendarId).replace(/=+$/, '');
 
-  // The calendar section is collapsed by default.
-  // Click the span with data-key="calendar" to expand it.
-  const calendarLink = document.querySelector('[role="dialog"][data-chips-dialog="true"] [data-key="calendar"]');
-  console.log('[GCal Tracker] calendarLink:', calendarLink);
-  if (calendarLink) {
-    calendarLink.click();
-    await delay(500);
-  }
-
-  // Re-find the calendar dropdown after expand (DOM may have re-rendered)
-  let calendarDropdown = document.querySelector('#xCalSel');
-  console.log('[GCal Tracker] calendarDropdown after expand:', calendarDropdown);
-
-  // If not found, the section might already be expanded or the expand didn't work.
-  // Try finding it without expanding.
-  if (!calendarDropdown) {
-    console.log('[GCal Tracker] #xCalSel not found, trying combobox with aria-label=Calendar');
-    calendarDropdown = document.querySelector('[role="combobox"][aria-label="Calendar"]');
-    if (calendarDropdown) {
-      // The combobox itself is inside the dropdown container, walk up
-      calendarDropdown = calendarDropdown.closest('[id^="xCalSel"], [jsname="tuPIjf"]') || calendarDropdown.parentElement;
-    }
-  }
-  if (!calendarDropdown) return false;
-
-  // Check if the right calendar is already selected
-  const currentSelection = calendarDropdown.querySelector('[role="option"][aria-selected="true"]');
-  console.log('[GCal Tracker] current calendar selection:', currentSelection && currentSelection.textContent.trim());
-  if (currentSelection && currentSelection.getAttribute('data-value') === encodedId) {
-    return true; // already selected
-  }
-
-  // Open the dropdown by clicking the combobox
-  const combobox = calendarDropdown.querySelector('[role="combobox"]') ||
-                   document.querySelector('[role="combobox"][aria-label="Calendar"]');
-  console.log('[GCal Tracker] combobox:', combobox);
+  // Go straight to the calendar combobox — it's in the DOM even when
+  // the section looks collapsed. Don't click data-key="calendar" as
+  // that navigates away / closes the popup.
+  const combobox = document.querySelector('[role="combobox"][aria-label="Calendar"]');
   if (!combobox) return false;
-  combobox.click();
 
-  // Wait for dropdown to open
+  // Check if already selected by reading the current display text
+  // and comparing against the options list
+  combobox.click();
   await delay(300);
 
-  // Find and click the right option — search from document since dropdown may be hoisted
+  // Find and click the right option — search broadly since dropdown may be hoisted
   const allOptions = document.querySelectorAll('[role="option"]');
-  console.log('[GCal Tracker] looking for encoded id:', encodedId);
   for (const option of allOptions) {
     if (option.getAttribute('data-value') === encodedId) {
-      console.log('[GCal Tracker] found matching option:', option.textContent.trim());
       option.click();
       await delay(200);
       return true;
     }
   }
 
-  console.log('[GCal Tracker] no matching option found');
-  // Close the dropdown
-  combobox.click();
+  // Not found — close dropdown
+  document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
   return false;
 }
 
