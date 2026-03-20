@@ -1,1 +1,53 @@
-/* Sidecar panel styles */
+#gcal-tracker-sidecar {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  padding: 12px;
+  min-width: 160px;
+  max-width: 220px;
+  font-family: 'Google Sans', Roboto, Arial, sans-serif;
+}
+
+.gcal-tracker-header {
+  font-size: 13px;
+  font-weight: 500;
+  color: #5f6368;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.gcal-tracker-warning {
+  font-size: 12px;
+  color: #d93025;
+  margin-bottom: 8px;
+}
+
+.gcal-tracker-btn {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  margin-bottom: 4px;
+  border: none;
+  border-radius: 4px;
+  background: #e8f0fe;
+  color: #1a73e8;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s;
+}
+
+.gcal-tracker-btn:hover {
+  background: #d2e3fc;
+}
+
+.gcal-tracker-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.gcal-tracker-btn:last-child {
+  margin-bottom: 0;
+}
