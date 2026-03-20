@@ -70,18 +70,18 @@ function injectSidecar(popup) {
       const btn = document.createElement('button');
       btn.className = 'gcal-tracker-btn';
       btn.textContent = project;
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        handleProjectClick(project, popup, calendarId);
-      });
-      btn.addEventListener('mousedown', (e) => e.stopPropagation());
+      btn.addEventListener('click', () => handleProjectClick(project, popup, calendarId));
       sidecar.appendChild(btn);
     });
 
-    // Append sidecar INSIDE the dialog so GCal doesn't treat clicks
-    // on it as "outside" clicks that close the popup.
-    popup.appendChild(sidecar);
+    // Intercept mousedown at capture phase on the sidecar to prevent
+    // GCal's document-level capture listener from seeing it as an
+    // "outside click" and closing the popup.
+    sidecar.addEventListener('mousedown', (e) => {
+      e.stopImmediatePropagation();
+    }, true); // capture phase
+
+    document.body.appendChild(sidecar);
     positionSidecar(sidecar, popup);
     currentSidecar = sidecar;
 
@@ -96,18 +96,16 @@ function injectSidecar(popup) {
 }
 
 function positionSidecar(sidecar, popup) {
-  // Sidecar is now a child of the popup, so use absolute positioning
-  // relative to the popup to place it to the right.
-  sidecar.style.position = 'absolute';
-  sidecar.style.top = '0px';
-  sidecar.style.left = `${popup.offsetWidth + 8}px`;
+  const rect = popup.getBoundingClientRect();
+  sidecar.style.position = 'fixed';
+  sidecar.style.top = `${rect.top}px`;
+  sidecar.style.left = `${rect.right + 8}px`;
   sidecar.style.zIndex = '9999';
 
   requestAnimationFrame(() => {
     const sidecarRect = sidecar.getBoundingClientRect();
     if (sidecarRect.right > window.innerWidth) {
-      // Place to the left instead
-      sidecar.style.left = `${-sidecar.offsetWidth - 8}px`;
+      sidecar.style.left = `${rect.left - sidecarRect.width - 8}px`;
     }
   });
 }
