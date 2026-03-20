@@ -125,49 +125,64 @@ function delay(ms) {
 }
 
 async function selectCalendar(popup, calendarId) {
-  // The calendar section is collapsed by default. We need to expand it
-  // by clicking the row that contains data-key="calendar".
-  // Use document-level search since GCal may re-render the popup.
+  const encodedId = btoa(calendarId).replace(/=+$/, '');
+
+  // The calendar section is collapsed by default.
+  // Click the span with data-key="calendar" to expand it.
   const calendarLink = document.querySelector('[role="dialog"][data-chips-dialog="true"] [data-key="calendar"]');
+  console.log('[GCal Tracker] calendarLink:', calendarLink);
   if (calendarLink) {
-    const expandBtn = calendarLink.closest('button');
-    if (expandBtn && expandBtn.getAttribute('aria-expanded') === 'false') {
-      expandBtn.click();
-      await delay(300);
-    }
+    calendarLink.click();
+    await delay(500);
   }
 
-  // Now find the calendar dropdown (id="xCalSel") from document
-  const calendarDropdown = document.querySelector('#xCalSel');
-  if (!calendarDropdown) return false;
+  // Re-find the calendar dropdown after expand (DOM may have re-rendered)
+  let calendarDropdown = document.querySelector('#xCalSel');
+  console.log('[GCal Tracker] calendarDropdown after expand:', calendarDropdown);
 
-  const encodedId = btoa(calendarId).replace(/=+$/, '');
+  // If not found, the section might already be expanded or the expand didn't work.
+  // Try finding it without expanding.
+  if (!calendarDropdown) {
+    console.log('[GCal Tracker] #xCalSel not found, trying combobox with aria-label=Calendar');
+    calendarDropdown = document.querySelector('[role="combobox"][aria-label="Calendar"]');
+    if (calendarDropdown) {
+      // The combobox itself is inside the dropdown container, walk up
+      calendarDropdown = calendarDropdown.closest('[id^="xCalSel"], [jsname="tuPIjf"]') || calendarDropdown.parentElement;
+    }
+  }
+  if (!calendarDropdown) return false;
 
   // Check if the right calendar is already selected
   const currentSelection = calendarDropdown.querySelector('[role="option"][aria-selected="true"]');
+  console.log('[GCal Tracker] current calendar selection:', currentSelection && currentSelection.textContent.trim());
   if (currentSelection && currentSelection.getAttribute('data-value') === encodedId) {
     return true; // already selected
   }
 
   // Open the dropdown by clicking the combobox
-  const combobox = calendarDropdown.querySelector('[role="combobox"]');
+  const combobox = calendarDropdown.querySelector('[role="combobox"]') ||
+                   document.querySelector('[role="combobox"][aria-label="Calendar"]');
+  console.log('[GCal Tracker] combobox:', combobox);
   if (!combobox) return false;
   combobox.click();
 
   // Wait for dropdown to open
-  await delay(150);
+  await delay(300);
 
-  // Find and click the right option
-  const options = calendarDropdown.querySelectorAll('[role="option"]');
-  for (const option of options) {
+  // Find and click the right option — search from document since dropdown may be hoisted
+  const allOptions = document.querySelectorAll('[role="option"]');
+  console.log('[GCal Tracker] looking for encoded id:', encodedId);
+  for (const option of allOptions) {
     if (option.getAttribute('data-value') === encodedId) {
+      console.log('[GCal Tracker] found matching option:', option.textContent.trim());
       option.click();
-      await delay(100);
+      await delay(200);
       return true;
     }
   }
 
-  // Calendar not found in dropdown — close it and fail
+  console.log('[GCal Tracker] no matching option found');
+  // Close the dropdown
   combobox.click();
   return false;
 }
