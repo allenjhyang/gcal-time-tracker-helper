@@ -62,7 +62,20 @@ function injectTracker(popup) {
 
     const header = document.createElement('div');
     header.className = 'gcal-tracker-header';
-    header.textContent = 'Time tracking';
+    const headerText = document.createElement('span');
+    headerText.textContent = 'Time tracking';
+    header.appendChild(headerText);
+    const settingsLink = document.createElement('a');
+    settingsLink.className = 'gcal-tracker-settings';
+    settingsLink.href = '#';
+    settingsLink.title = 'Open extension settings';
+    settingsLink.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M19 19H5V5h7V3H5a2 2 0 00-2 2v14a2 2 0 002 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>';
+    settingsLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      chrome.runtime.sendMessage({ type: 'OPEN_OPTIONS' });
+    });
+    header.appendChild(settingsLink);
     tracker.appendChild(header);
 
     if (!calendarId) {

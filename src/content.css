@@ -14,6 +14,21 @@
   margin-bottom: 6px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.gcal-tracker-settings {
+  color: #9aa0a6;
+  cursor: pointer;
+  display: inline-flex;
+  text-decoration: none;
+  line-height: 1;
+}
+
+.gcal-tracker-settings:hover {
+  color: #5f6368;
 }
 
 .gcal-tracker-warning {
