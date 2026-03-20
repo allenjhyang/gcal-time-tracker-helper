@@ -21,17 +21,15 @@ function detectPopup() {
 
 function findQuickCreatePopup(node) {
   // The quick-create popup is the editing bubble that appears on click+drag.
-  // It contains a "Save" button and "More options" — unlike regular event chips.
-  // We must NOT match on [data-eventid] alone since every event on the calendar has that.
+  // It has role="dialog" and data-chips-dialog="true", plus a "Save" button.
+  // We must NOT match on [data-eventid] alone since every event chip has that.
 
-  // Look for a newly added element that contains both a "Save" button
-  // and either a contenteditable or input for the event title.
-  const saveBtn = node.querySelector && node.querySelector('button');
-  if (!saveBtn) {
-    // Check if node itself is a button container
-    if (!node.querySelectorAll) return null;
-  }
+  // Check if node itself is the dialog
+  if (node.matches && node.matches('[role="dialog"][data-chips-dialog="true"]')) return node;
+  const dialogChild = node.querySelector && node.querySelector('[role="dialog"][data-chips-dialog="true"]');
+  if (dialogChild) return dialogChild;
 
+  // Fallback: look for Save button as anchor
   const buttons = node.querySelectorAll ? node.querySelectorAll('button') : [];
   let hasSave = false;
   for (const btn of buttons) {
@@ -42,99 +40,10 @@ function findQuickCreatePopup(node) {
   }
   if (!hasSave) return null;
 
-  // Found a "Save" button — now find the popup container.
-  // Look for role="dialog" first, then walk up to a reasonably-sized container.
   const dialog = node.closest ? node.closest('[role="dialog"]') : null;
   if (dialog) return dialog;
   if (node.matches && node.matches('[role="dialog"]')) return node;
-  const dialogChild = node.querySelector && node.querySelector('[role="dialog"]');
-  if (dialogChild) return dialogChild;
 
-  // Fallback: walk up from the Save button to find a container
-  for (const btn of buttons) {
-    if (btn.textContent.trim() === 'Save') {
-      let container = btn.parentElement;
-      while (container && container !== document.body) {
-        if (container.offsetWidth > 200 && container.offsetHeight > 100) {
-          return container;
-        }
-        container = container.parentElement;
-      }
-    }
-  }
-  return null;
-}
-
-function extractTimeFromPopup(popup) {
-  const allText = popup.innerText;
-  const timePattern = /(\d{1,2}(?::\d{2})?(?:am|pm)?)\s*[–\-]\s*(\d{1,2}(?::\d{2})?(?:am|pm)?)/i;
-  const match = allText.match(timePattern);
-
-  if (match) {
-    return parseTimeRange(match[0]);
-  }
-
-  return null;
-}
-
-function parseTimeRange(timeText) {
-  const timePattern = /(\d{1,2}(?::\d{2})?)\s*(am|pm)?\s*[–\-]\s*(\d{1,2}(?::\d{2})?)\s*(am|pm)?/i;
-  const match = timeText.match(timePattern);
-  if (!match) return null;
-
-  let [, startRaw, startMeridiem, endRaw, endMeridiem] = match;
-
-  // If only end has am/pm, infer start meridiem.
-  // GCal omits start meridiem when it's the same as end, e.g. "10:00 – 11:00am"
-  // But for cross-meridiem ranges like "11:00 – 1:00pm", start should be am.
-  if (!startMeridiem && endMeridiem) {
-    const tentativeStart = toMinutes(startRaw, endMeridiem);
-    const endMinutes = toMinutes(endRaw, endMeridiem);
-    if (tentativeStart > endMinutes) {
-      startMeridiem = endMeridiem.toLowerCase() === 'pm' ? 'am' : 'pm';
-    } else {
-      startMeridiem = endMeridiem;
-    }
-  }
-  if (!startMeridiem) startMeridiem = 'am'; // fallback
-
-  const startTime = toMinutes(startRaw, startMeridiem);
-  const endTime = toMinutes(endRaw, endMeridiem || startMeridiem);
-
-  const dateStr = extractDateFromPopup();
-  const date = dateStr ? new Date(dateStr) : new Date();
-  const year = date.getFullYear();
-  const month = date.getMonth();
-  const day = date.getDate();
-
-  const start = new Date(year, month, day, Math.floor(startTime / 60), startTime % 60);
-  const end = new Date(year, month, day, Math.floor(endTime / 60), endTime % 60);
-
-  return {
-    startTime: start.toISOString(),
-    endTime: end.toISOString(),
-  };
-}
-
-function toMinutes(raw, meridiem) {
-  let [hours, minutes] = raw.includes(':') ? raw.split(':').map(Number) : [Number(raw), 0];
-  meridiem = (meridiem || '').toLowerCase();
-  if (meridiem === 'pm' && hours !== 12) hours += 12;
-  if (meridiem === 'am' && hours === 12) hours = 0;
-  return hours * 60 + minutes;
-}
-
-function extractDateFromPopup() {
-  const selected = document.querySelector('.yDmH0d[data-datekey]');
-  if (selected) {
-    const dateKey = selected.getAttribute('data-datekey');
-    if (dateKey && dateKey.length === 8) {
-      const y = dateKey.substring(0, 4);
-      const m = dateKey.substring(4, 6);
-      const d = dateKey.substring(6, 8);
-      return `${y}-${m}-${d}`;
-    }
-  }
   return null;
 }
 
@@ -201,57 +110,114 @@ function removeSidecar() {
   }
 }
 
+// --- DOM manipulation helpers ---
+
+function setNativeInputValue(input, value) {
+  // Use the native setter so GCal's framework picks up the change
+  const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+  nativeSetter.call(input, value);
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+  input.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function selectCalendar(popup, calendarId) {
+  // The calendar dropdown has id="xCalSel". Options have data-value = btoa(calendarId).
+  const calendarDropdown = popup.querySelector('#xCalSel');
+  if (!calendarDropdown) return false;
+
+  const encodedId = btoa(calendarId);
+
+  // Check if the right calendar is already selected
+  const currentSelection = calendarDropdown.querySelector('[role="option"][aria-selected="true"]');
+  if (currentSelection && currentSelection.getAttribute('data-value') === encodedId) {
+    return true; // already selected
+  }
+
+  // Open the dropdown by clicking the combobox
+  const combobox = calendarDropdown.querySelector('[role="combobox"]');
+  if (!combobox) return false;
+  combobox.click();
+
+  // Wait for dropdown to open
+  await delay(150);
+
+  // Find and click the right option
+  const options = calendarDropdown.querySelectorAll('[role="option"]');
+  for (const option of options) {
+    if (option.getAttribute('data-value') === encodedId) {
+      option.click();
+      await delay(100);
+      return true;
+    }
+  }
+
+  // Calendar not found in dropdown — close it and fail
+  combobox.click();
+  return false;
+}
+
 async function handleProjectClick(projectName, popup, calendarId) {
   if (!calendarId) {
     alert('Please set a time tracking calendar in the extension options.');
     return;
   }
 
-  const times = extractTimeFromPopup(popup);
-  if (!times) {
-    alert('Could not detect the selected time range. Please try again.');
-    return;
-  }
-
+  // Show loading state
   const buttons = currentSidecar.querySelectorAll('.gcal-tracker-btn');
   buttons.forEach(btn => { btn.disabled = true; });
   const clickedBtn = [...buttons].find(btn => btn.textContent === projectName);
   if (clickedBtn) clickedBtn.textContent = 'Creating...';
 
-  chrome.runtime.sendMessage(
-    {
-      type: 'CREATE_EVENT',
-      payload: {
-        calendarId,
-        summary: projectName,
-        startTime: times.startTime,
-        endTime: times.endTime,
-      },
-    },
-    (response) => {
-      if (response && response.error) {
-        alert('Failed to create event: ' + response.error);
-        if (clickedBtn) clickedBtn.textContent = projectName;
-        buttons.forEach(btn => { btn.disabled = false; });
-      } else {
-        // Show success feedback briefly before closing
-        if (clickedBtn) {
-          clickedBtn.textContent = 'Created!';
-          clickedBtn.style.background = '#ceead6';
-          clickedBtn.style.color = '#137333';
-        }
-        setTimeout(() => {
-          removeSidecar();
-          // Reload so GCal fetches the newly created event
-          location.reload();
-        }, 600);
-      }
+  try {
+    // 1. Set the event title
+    const titleInput = popup.querySelector('input[aria-label="Add title"]');
+    if (!titleInput) {
+      alert('Could not find the title input. GCal may have changed.');
+      resetButtons(buttons, clickedBtn, projectName);
+      return;
     }
-  );
+    setNativeInputValue(titleInput, projectName);
+
+    // 2. Select the time-tracking calendar
+    const calendarSelected = await selectCalendar(popup, calendarId);
+    if (!calendarSelected) {
+      alert('Could not find the selected calendar in the dropdown. Check your extension options.');
+      resetButtons(buttons, clickedBtn, projectName);
+      return;
+    }
+
+    // 3. Click Save
+    const saveBtn = popup.querySelector('button[jsname="x8hlje"]');
+    if (!saveBtn) {
+      alert('Could not find the Save button. GCal may have changed.');
+      resetButtons(buttons, clickedBtn, projectName);
+      return;
+    }
+
+    // Show success feedback briefly, then save
+    if (clickedBtn) {
+      clickedBtn.textContent = 'Created!';
+      clickedBtn.style.background = '#ceead6';
+      clickedBtn.style.color = '#137333';
+    }
+
+    await delay(300);
+    removeSidecar();
+    saveBtn.click();
+
+  } catch (err) {
+    alert('Error creating event: ' + err.message);
+    resetButtons(buttons, clickedBtn, projectName);
+  }
 }
 
-function closeNativePopup(popup) {
-  document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+function resetButtons(buttons, clickedBtn, projectName) {
+  if (clickedBtn) clickedBtn.textContent = projectName;
+  buttons.forEach(btn => { btn.disabled = false; });
 }
 
 // Start observing when the page is ready
