@@ -20,19 +20,27 @@ function detectPopup() {
 }
 
 function findQuickCreatePopup(node) {
-  if (node.matches && node.matches('[role="dialog"][data-chips-dialog="true"]')) return node;
-  const dialogChild = node.querySelector && node.querySelector('[role="dialog"][data-chips-dialog="true"]');
-  if (dialogChild) return dialogChild;
-  return null;
+  let dialog = null;
+  if (node.matches && node.matches('[role="dialog"][data-chips-dialog="true"]')) dialog = node;
+  if (!dialog && node.querySelector) dialog = node.querySelector('[role="dialog"][data-chips-dialog="true"]');
+  if (!dialog) return null;
+  // Only match the "create event" popup (has a title input), not the event detail popup
+  if (!dialog.querySelector('input[aria-label="Add title"]')) return null;
+  return dialog;
 }
 
-function getCalendarColor(popup) {
-  // Try to read the calendar color from the color swatch in the popup
-  const swatch = popup.querySelector('.tWokJb');
-  if (swatch) return swatch.style.backgroundColor;
-  // Fallback: read from the color picker's selected color
-  const colorBtn = popup.querySelector('[jsname="QPiGnd"]');
-  if (colorBtn) return colorBtn.style.backgroundColor;
+function getCalendarColor(calendarId) {
+  // Look up the target calendar's color from the GCal sidebar
+  if (calendarId) {
+    const encodedId = btoa(calendarId).replace(/=+$/, '');
+    const item = document.querySelector(`[data-id="${encodedId}"]`);
+    if (item) {
+      const checkbox = item.querySelector('[style*="--checkbox-color"]');
+      if (checkbox) {
+        return getComputedStyle(checkbox).getPropertyValue('--checkbox-color').trim();
+      }
+    }
+  }
   return null;
 }
 
@@ -53,8 +61,8 @@ function injectTracker(popup) {
     const scrollable = popup.querySelector('[data-bubble-scrollable-root]');
     const container = scrollable || popup;
 
-    // Get the calendar color for pill styling
-    const calColor = getCalendarColor(popup);
+    // Get the target calendar's color from the GCal sidebar
+    const calColor = getCalendarColor(calendarId);
     const textColor = calColor ? getContrastColor(calColor) : null;
 
     const tracker = document.createElement('div');
