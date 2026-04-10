@@ -7,6 +7,20 @@ let weekObserver = null;
 let navObserver = null;
 let lastDateHeader = '';
 
+function migrateToGroups(data) {
+  if (data.groups) return data.groups;
+  const projects = data.projects || [];
+  return [{ id: 'uncategorized', name: 'Other', projects }];
+}
+
+function flattenGroups(groups) {
+  return groups.flatMap(g => g.projects);
+}
+
+function hasNamedGroups(groups) {
+  return groups.some(g => g.id !== 'uncategorized');
+}
+
 function detectPopup() {
   const observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
@@ -63,8 +77,14 @@ function getContrastColor(bgColor) {
 }
 
 function injectTracker(popup) {
-  chrome.storage.sync.get({ projects: [], calendarName: '' }, ({ projects, calendarName }) => {
-    if (projects.length === 0) return;
+  chrome.storage.sync.get({ groups: null, projects: null, calendarName: '' }, (data) => {
+    const groups = migrateToGroups(data);
+    if (!data.groups) {
+      chrome.storage.sync.set({ groups }, () => chrome.storage.sync.remove('projects'));
+    }
+    const allProjects = flattenGroups(groups);
+    if (allProjects.length === 0) return;
+    const calendarName = data.calendarName || '';
 
     // Find the scrollable content area to append our buttons at the bottom
     const scrollable = popup.querySelector('[data-bubble-scrollable-root]');
@@ -111,20 +131,60 @@ function injectTracker(popup) {
     const pills = document.createElement('div');
     pills.className = 'gcal-tracker-pills';
 
-    projects.forEach(project => {
-      const btn = document.createElement('button');
-      btn.className = 'gcal-tracker-btn';
-      btn.textContent = project;
-      if (calColor) {
-        btn.style.backgroundColor = calColor;
-        btn.style.color = textColor;
-        btn.style.borderColor = calColor;
+    const showLabels = hasNamedGroups(groups);
+
+    groups.forEach(group => {
+      if (group.projects.length === 0) return;
+
+      if (showLabels) {
+        const groupRow = document.createElement('div');
+        groupRow.className = 'gcal-tracker-group-row';
+
+        const label = document.createElement('span');
+        label.className = 'gcal-tracker-group-label';
+        if (group.id === 'uncategorized') label.classList.add('gcal-tracker-group-label-other');
+        label.textContent = group.name;
+        groupRow.appendChild(label);
+
+        const pillsWrap = document.createElement('div');
+        pillsWrap.className = 'gcal-tracker-group-pills';
+
+        group.projects.forEach(project => {
+          const btn = document.createElement('button');
+          btn.className = 'gcal-tracker-btn';
+          btn.textContent = project;
+          if (calColor) {
+            btn.style.backgroundColor = calColor;
+            btn.style.color = textColor;
+            btn.style.borderColor = calColor;
+          }
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            fillProject(popup, project, calendar?.encodedId, btn, tracker);
+          });
+          pillsWrap.appendChild(btn);
+        });
+
+        groupRow.appendChild(pillsWrap);
+        pills.appendChild(groupRow);
+      } else {
+        // Single group (only "Other") — flat layout, no labels
+        group.projects.forEach(project => {
+          const btn = document.createElement('button');
+          btn.className = 'gcal-tracker-btn';
+          btn.textContent = project;
+          if (calColor) {
+            btn.style.backgroundColor = calColor;
+            btn.style.color = textColor;
+            btn.style.borderColor = calColor;
+          }
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            fillProject(popup, project, calendar?.encodedId, btn, tracker);
+          });
+          pills.appendChild(btn);
+        });
       }
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        fillProject(popup, project, calendar?.encodedId, btn, tracker);
-      });
-      pills.appendChild(btn);
     });
 
     tracker.appendChild(pills);
@@ -302,7 +362,7 @@ function scanWeeklyEvents(calendarName, projects) {
   return results;
 }
 
-function renderSummaryBody(body, results, calColor) {
+function renderSummaryBody(body, results, calColor, groups) {
   body.innerHTML = '';
 
   const hasAnyTime = Object.values(results).some(v => v > 0);
@@ -315,32 +375,66 @@ function renderSummaryBody(body, results, calColor) {
   }
 
   let total = 0;
+  const showLabels = hasNamedGroups(groups);
 
-  Object.entries(results).forEach(([key, minutes]) => {
-    if (minutes <= 0) return;
-    total += minutes;
+  groups.forEach(group => {
+    const groupHasTime = group.projects.some(p => results[p] > 0);
+    if (!groupHasTime) return;
+
+    if (showLabels) {
+      const labelEl = document.createElement('div');
+      labelEl.className = 'tts-group-label';
+      if (group.id === 'uncategorized') labelEl.classList.add('tts-group-label-other');
+      labelEl.textContent = group.name;
+      body.appendChild(labelEl);
+    }
+
+    group.projects.forEach(project => {
+      const minutes = results[project] || 0;
+      if (minutes <= 0) return;
+      total += minutes;
+
+      const row = document.createElement('div');
+      row.className = 'tts-row';
+
+      const label = document.createElement('span');
+      label.className = 'tts-label';
+
+      if (calColor) {
+        const dot = document.createElement('span');
+        dot.className = 'tts-dot';
+        dot.style.backgroundColor = calColor;
+        label.appendChild(dot);
+      }
+
+      const text = document.createElement('span');
+      text.textContent = project;
+      label.appendChild(text);
+
+      row.appendChild(label);
+      row.appendChild(createDurationEl(minutes));
+      body.appendChild(row);
+    });
+  });
+
+  if (results['_uncategorized'] > 0) {
+    total += results['_uncategorized'];
 
     const row = document.createElement('div');
     row.className = 'tts-row';
 
     const label = document.createElement('span');
     label.className = 'tts-label';
-
-    if (calColor && key !== '_uncategorized') {
-      const dot = document.createElement('span');
-      dot.className = 'tts-dot';
-      dot.style.backgroundColor = calColor;
-      label.appendChild(dot);
-    }
-
     const text = document.createElement('span');
-    text.textContent = key === '_uncategorized' ? 'Uncategorized' : key;
+    text.textContent = 'Uncategorized';
+    text.style.fontStyle = 'italic';
+    text.style.color = '#80868b';
     label.appendChild(text);
 
     row.appendChild(label);
-    row.appendChild(createDurationEl(minutes));
+    row.appendChild(createDurationEl(results['_uncategorized']));
     body.appendChild(row);
-  });
+  }
 
   if (total > 0) {
     const divider = document.createElement('div');
@@ -372,7 +466,13 @@ function refreshSummary(isRetry) {
   const body = summarySection.querySelector('.tts-body');
   if (!body) return;
 
-  chrome.storage.sync.get({ projects: [], calendarName: '', summaryCollapsed: false }, (settings) => {
+  chrome.storage.sync.get({ groups: null, projects: null, calendarName: '', summaryCollapsed: false }, (data) => {
+    const groups = migrateToGroups(data);
+    if (!data.groups) {
+      chrome.storage.sync.set({ groups }, () => chrome.storage.sync.remove('projects'));
+    }
+    const settings = { groups, calendarName: data.calendarName || '', summaryCollapsed: data.summaryCollapsed || false };
+    const allProjects = flattenGroups(settings.groups);
     summaryCollapsed = settings.summaryCollapsed;
     body.style.display = summaryCollapsed ? 'none' : 'block';
     const icon = summarySection.querySelector('.tts-arrow');
@@ -387,7 +487,7 @@ function refreshSummary(isRetry) {
       return;
     }
 
-    if (settings.projects.length === 0) {
+    if (allProjects.length === 0) {
       body.innerHTML = '';
       const msg = document.createElement('div');
       msg.className = 'tts-empty';
@@ -417,16 +517,16 @@ function refreshSummary(isRetry) {
           const cal = findCalendarByName(settings.calendarName);
           if (cal) {
             clearInterval(retryInterval);
-            const results = scanWeeklyEvents(settings.calendarName, settings.projects);
-            renderSummaryBody(body, results, cal.color);
+            const results = scanWeeklyEvents(settings.calendarName, allProjects);
+            renderSummaryBody(body, results, cal.color, settings.groups);
           }
         }, 300);
       }
       return;
     }
 
-    const results = scanWeeklyEvents(settings.calendarName, settings.projects);
-    renderSummaryBody(body, results, calendar.color);
+    const results = scanWeeklyEvents(settings.calendarName, allProjects);
+    renderSummaryBody(body, results, calendar.color, settings.groups);
   });
 }
 
@@ -457,7 +557,7 @@ function createSummarySection() {
   const h2 = document.createElement('h2');
   h2.className = 'XuJrye';
   h2.tabIndex = -1;
-  h2.textContent = 'Time tracking summary';
+  h2.textContent = 'Time tracking';
 
   // Wrapper div around button (native has this)
   const pNSpvb = document.createElement('div');
@@ -479,8 +579,13 @@ function createSummarySection() {
   const btnInner = document.createElement('div');
   btnInner.className = 'qADfd';
   const titleDiv = document.createElement('div');
-  titleDiv.className = 'mqTdDf';
-  titleDiv.textContent = 'Time tracking summary';
+  titleDiv.className = 'mqTdDf tts-title';
+  const logoImg = document.createElement('img');
+  logoImg.src = chrome.runtime.getURL('icons/icon16.png');
+  logoImg.className = 'tts-logo';
+  logoImg.alt = '';
+  titleDiv.appendChild(logoImg);
+  titleDiv.appendChild(document.createTextNode('Time tracking'));
   const arrowIcon = document.createElement('i');
   arrowIcon.className = 'google-material-icons notranslate wvnnTb tts-arrow';
   arrowIcon.setAttribute('aria-hidden', 'true');
@@ -569,7 +674,7 @@ function setupSummaryObservers() {
 
   // Settings changes
   chrome.storage.onChanged.addListener((changes) => {
-    if (changes.projects || changes.calendarName) {
+    if (changes.groups || changes.calendarName) {
       refreshSummary();
     }
   });
