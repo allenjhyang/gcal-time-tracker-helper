@@ -94,7 +94,9 @@ function renderGroups(updatedGroups) {
       if (dragType === 'group' && dragSourceGroupIndex !== null) {
         if (isUncategorized || dragSourceGroupIndex === groupIndex) return;
         const [moved] = groups.splice(dragSourceGroupIndex, 1);
-        groups.splice(groupIndex, 0, moved);
+        let targetIdx = groupIndex;
+        if (dragSourceGroupIndex < groupIndex) targetIdx--;
+        groups.splice(targetIdx, 0, moved);
         saveGroups(() => renderGroups());
       } else if (dragType === 'project' && dragSourceGroupId !== null) {
         const srcGroup = groups.find(g => g.id === dragSourceGroupId);
@@ -126,7 +128,10 @@ function renderGroups(updatedGroups) {
         input.focus();
         input.select();
 
+        let committed = false;
         const commit = () => {
+          if (committed) return;
+          committed = true;
           const newName = input.value.trim();
           if (!newName || newName === group.name) {
             input.replaceWith(nameEl);
@@ -220,7 +225,9 @@ function renderGroups(updatedGroups) {
         } else if (dragType === 'group') {
           if (isUncategorized || dragSourceGroupIndex === groupIndex) return;
           const [moved] = groups.splice(dragSourceGroupIndex, 1);
-          groups.splice(groupIndex, 0, moved);
+          let targetIdx = groupIndex;
+          if (dragSourceGroupIndex < groupIndex) targetIdx--;
+          groups.splice(targetIdx, 0, moved);
           saveGroups(() => renderGroups());
         }
       });
