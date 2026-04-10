@@ -60,53 +60,75 @@ function renderGroups(updatedGroups) {
   groups.forEach((group, groupIndex) => {
     const isUncategorized = group.id === 'uncategorized';
 
+    // Container wraps header + project rows for cross-group drop targeting
+    const container = document.createElement('div');
+    container.className = 'group-container' + (isUncategorized ? ' group-uncategorized' : '');
+    container.dataset.groupIndex = groupIndex;
+
+    // Cross-group project drop: highlight entire container, append to bottom
+    container.addEventListener('dragover', (e) => {
+      if (dragType === 'project' && dragSourceGroupId !== group.id) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        container.classList.add('drag-over');
+      }
+    });
+    container.addEventListener('dragleave', (e) => {
+      if (!container.contains(e.relatedTarget)) {
+        container.classList.remove('drag-over');
+      }
+    });
+    container.addEventListener('drop', (e) => {
+      if (dragType === 'project' && dragSourceGroupId !== null && dragSourceGroupId !== group.id) {
+        e.preventDefault();
+        e.stopPropagation();
+        container.classList.remove('drag-over');
+        const srcGroup = groups.find(g => g.id === dragSourceGroupId);
+        if (!srcGroup) return;
+        const [movedProject] = srcGroup.projects.splice(dragSourceProjectIndex, 1);
+        group.projects.push(movedProject);
+        saveGroups(() => renderGroups());
+      }
+    });
+
     const header = document.createElement('div');
-    header.className = 'group-header' + (isUncategorized ? ' group-uncategorized' : '');
-    header.dataset.groupIndex = groupIndex;
+    header.className = 'group-header';
 
     if (!isUncategorized) {
       header.draggable = true;
       header.addEventListener('dragstart', (e) => {
         dragType = 'group';
         dragSourceGroupIndex = groupIndex;
-        header.classList.add('dragging');
+        container.classList.add('dragging');
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('text/plain', '');
       });
       header.addEventListener('dragend', () => {
-        header.classList.remove('dragging');
+        container.classList.remove('dragging');
         groupListEl.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
         dragType = null;
         dragSourceGroupIndex = null;
       });
     }
 
+    // Group reorder: header is the drop target for other group headers
     header.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      header.classList.add('drag-over');
-    });
-    header.addEventListener('dragleave', (e) => {
-      if (!header.contains(e.relatedTarget)) {
-        header.classList.remove('drag-over');
+      if (dragType === 'group') {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        container.classList.add('drag-over');
       }
     });
     header.addEventListener('drop', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      header.classList.remove('drag-over');
       if (dragType === 'group' && dragSourceGroupIndex !== null) {
+        e.preventDefault();
+        e.stopPropagation();
+        container.classList.remove('drag-over');
         if (isUncategorized || dragSourceGroupIndex === groupIndex) return;
         const [moved] = groups.splice(dragSourceGroupIndex, 1);
         let targetIdx = groupIndex;
         if (dragSourceGroupIndex < groupIndex) targetIdx--;
         groups.splice(targetIdx, 0, moved);
-        saveGroups(() => renderGroups());
-      } else if (dragType === 'project' && dragSourceGroupId !== null) {
-        const srcGroup = groups.find(g => g.id === dragSourceGroupId);
-        if (!srcGroup || srcGroup.id === group.id) return;
-        const [movedProject] = srcGroup.projects.splice(dragSourceProjectIndex, 1);
-        group.projects.push(movedProject);
         saveGroups(() => renderGroups());
       }
     });
@@ -181,7 +203,8 @@ function renderGroups(updatedGroups) {
       header.appendChild(deleteBtn);
     }
 
-    groupListEl.appendChild(header);
+    container.appendChild(header);
+    groupListEl.appendChild(container);
 
     group.projects.forEach((projectName, projectIndex) => {
       const row = document.createElement('div');
@@ -205,35 +228,27 @@ function renderGroups(updatedGroups) {
         dragSourceGroupId = null;
         dragSourceProjectIndex = null;
       });
+      // Same-group reorder: row-level drop target
       row.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-        row.classList.add('drag-over');
+        if (dragType === 'project' && dragSourceGroupId === group.id) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          row.classList.add('drag-over');
+        }
       });
       row.addEventListener('dragleave', () => {
         row.classList.remove('drag-over');
       });
       row.addEventListener('drop', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        row.classList.remove('drag-over');
-        if (dragType === 'project' && dragSourceGroupId !== null) {
-          const srcGroup = groups.find(g => g.id === dragSourceGroupId);
-          if (!srcGroup) return;
-          const [movedProject] = srcGroup.projects.splice(dragSourceProjectIndex, 1);
-          const targetGroup = groups.find(g => g.id === group.id);
+        if (dragType === 'project' && dragSourceGroupId === group.id) {
+          e.preventDefault();
+          e.stopPropagation();
+          row.classList.remove('drag-over');
+          if (dragSourceProjectIndex === projectIndex) return;
+          const [movedProject] = group.projects.splice(dragSourceProjectIndex, 1);
           let insertIndex = projectIndex;
-          if (srcGroup.id === targetGroup.id && dragSourceProjectIndex < projectIndex) {
-            insertIndex--;
-          }
-          targetGroup.projects.splice(insertIndex, 0, movedProject);
-          saveGroups(() => renderGroups());
-        } else if (dragType === 'group') {
-          if (isUncategorized || dragSourceGroupIndex === groupIndex) return;
-          const [moved] = groups.splice(dragSourceGroupIndex, 1);
-          let targetIdx = groupIndex;
-          if (dragSourceGroupIndex < groupIndex) targetIdx--;
-          groups.splice(targetIdx, 0, moved);
+          if (dragSourceProjectIndex < projectIndex) insertIndex--;
+          group.projects.splice(insertIndex, 0, movedProject);
           saveGroups(() => renderGroups());
         }
       });
@@ -257,7 +272,7 @@ function renderGroups(updatedGroups) {
       row.appendChild(grip);
       row.appendChild(span);
       row.appendChild(removeBtn);
-      groupListEl.appendChild(row);
+      container.appendChild(row);
     });
   });
 }

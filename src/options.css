@@ -99,12 +99,17 @@ button:hover { background: #1557b0; }
 }
 .add-group input { flex: 1; }
 
+.group-container {
+  border-bottom: 1px solid #e0e0e0;
+}
+.group-container.dragging { opacity: 0.4; }
+.group-container.drag-over { background: #e8f0fe; }
+
 .group-header {
   display: flex;
   align-items: center;
   padding: 0.5rem 0.5rem;
   background: #f8f9fa;
-  border-bottom: 1px solid #e0e0e0;
   font-weight: 600;
   font-size: 0.9rem;
   cursor: grab;
@@ -112,15 +117,15 @@ button:hover { background: #1557b0; }
   gap: 0.5rem;
 }
 .group-header:active { cursor: grabbing; }
-.group-header.dragging { opacity: 0.4; }
-.group-header.drag-over { background: #e8f0fe; }
 
-.group-uncategorized {
-  background: #fffbe6;
+.group-uncategorized .group-header {
   cursor: default;
+}
+.group-uncategorized .group-header:active { cursor: default; }
+.group-uncategorized .group-header {
+  background: #fffbe6;
   font-style: italic;
 }
-.group-uncategorized:active { cursor: default; }
 
 .group-name {
   flex: 1;
