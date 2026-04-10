@@ -71,6 +71,7 @@ function renderGroups(updatedGroups) {
         dragSourceGroupIndex = groupIndex;
         header.classList.add('dragging');
         e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', '');
       });
       header.addEventListener('dragend', () => {
         header.classList.remove('dragging');
@@ -85,8 +86,10 @@ function renderGroups(updatedGroups) {
       e.dataTransfer.dropEffect = 'move';
       header.classList.add('drag-over');
     });
-    header.addEventListener('dragleave', () => {
-      header.classList.remove('drag-over');
+    header.addEventListener('dragleave', (e) => {
+      if (!header.contains(e.relatedTarget)) {
+        header.classList.remove('drag-over');
+      }
     });
     header.addEventListener('drop', (e) => {
       e.preventDefault();
@@ -192,6 +195,7 @@ function renderGroups(updatedGroups) {
         dragSourceProjectIndex = projectIndex;
         row.classList.add('dragging');
         e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', '');
       });
       row.addEventListener('dragend', () => {
         row.classList.remove('dragging');
