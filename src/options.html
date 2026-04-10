@@ -11,11 +11,12 @@
 
     <section>
       <h2>Time Tracking Calendar</h2>
-      <p>Events will be created on this calendar.</p>
-      <button id="auth-btn">Connect Google Account</button>
-      <select id="calendar-select" disabled>
-        <option value="">Connect account first...</option>
-      </select>
+      <p>Enter the exact name of the calendar to create events on (case-sensitive).</p>
+      <p class="hint">If multiple calendars share the same name, the first match in the sidebar will be used.</p>
+      <div class="calendar-input">
+        <input type="text" id="calendar-name" placeholder="e.g. Time tracking">
+        <button id="save-calendar-btn">Save</button>
+      </div>
     </section>
 
     <section>

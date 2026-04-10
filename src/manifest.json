@@ -4,12 +4,10 @@
   "version": "1.0.0",
   "description": "Quick-create time tracking events on Google Calendar",
   "permissions": [
-    "identity",
     "storage"
   ],
   "host_permissions": [
-    "https://calendar.google.com/*",
-    "https://www.googleapis.com/*"
+    "https://calendar.google.com/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -30,12 +28,6 @@
   "options_ui": {
     "page": "options.html",
     "open_in_tab": true
-  },
-  "oauth2": {
-    "client_id": "959247079853-sp3slrtu0happ3blas0qfq8hn0bi5g65.apps.googleusercontent.com",
-    "scopes": [
-      "https://www.googleapis.com/auth/calendar"
-    ]
   },
   "icons": {
     "16": "icons/icon16.png",

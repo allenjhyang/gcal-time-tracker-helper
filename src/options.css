@@ -42,7 +42,14 @@ button {
 }
 button:hover { background: #1557b0; }
 
-#auth-btn { margin-bottom: 0.75rem; }
+.hint { font-size: 0.8rem; color: #999; font-style: italic; }
+
+.calendar-input {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+.calendar-input input { flex: 1; }
 
 .add-project {
   display: flex;
@@ -53,11 +60,24 @@ button:hover { background: #1557b0; }
 
 .project-row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   padding: 0.5rem 0;
   border-bottom: 1px solid #eee;
+  cursor: grab;
+  user-select: none;
 }
+.project-row:active { cursor: grabbing; }
+.project-row.dragging { opacity: 0.4; }
+.project-row.drag-over { border-top: 2px solid #1a73e8; }
+
+.drag-grip {
+  color: #bbb;
+  margin-right: 0.5rem;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.project-name { flex: 1; }
 
 .remove-btn {
   background: #dc3545;

@@ -64,3 +64,94 @@
   outline: 2px solid #1a73e8;
   outline-offset: 1px;
 }
+
+/* --- Time Tracking Summary (leftnav section) --- */
+
+
+.tts-body {
+  padding: 4px 24px 12px 28px;
+  font-family: 'Google Sans', Roboto, Arial, sans-serif;
+}
+
+.tts-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 0;
+  font-size: 12px;
+  color: #3c4043;
+}
+
+.tts-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.tts-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tts-value {
+  font-variant-numeric: tabular-nums;
+  color: #5f6368;
+  flex-shrink: 0;
+  margin-left: 8px;
+  font-size: 12px;
+  display: inline-flex;
+  justify-content: flex-end;
+}
+
+.tts-hours {
+  display: inline-block;
+  text-align: right;
+  min-width: 28px;
+}
+
+.tts-mins {
+  display: inline-block;
+  text-align: right;
+  min-width: 28px;
+  margin-left: 2px;
+}
+
+.tts-divider {
+  border-top: 1px solid #e8eaed;
+  margin: 4px 0;
+}
+
+.tts-total {
+  font-weight: 500;
+}
+
+.tts-total .tts-value {
+  color: #3c4043;
+  font-weight: 500;
+}
+
+.tts-loading {
+  font-size: 12px;
+  color: #80868b;
+  padding: 4px 0;
+}
+
+.tts-empty {
+  font-size: 12px;
+  color: #80868b;
+  padding: 4px 0;
+  font-style: italic;
+}
+
+.tts-warning {
+  font-size: 12px;
+  color: #d93025;
+  padding: 4px 0;
+}
