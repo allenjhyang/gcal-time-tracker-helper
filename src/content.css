@@ -39,8 +39,13 @@
 
 .gcal-tracker-pills {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 4px;
+}
+
+.gcal-tracker-pills--flat {
+  flex-direction: row;
+  flex-wrap: wrap;
 }
 
 .gcal-tracker-btn {

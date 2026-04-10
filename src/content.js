@@ -129,9 +129,8 @@ function injectTracker(popup) {
     }
 
     const pills = document.createElement('div');
-    pills.className = 'gcal-tracker-pills';
-
     const showLabels = hasNamedGroups(groups);
+    pills.className = showLabels ? 'gcal-tracker-pills' : 'gcal-tracker-pills gcal-tracker-pills--flat';
 
     groups.forEach(group => {
       if (group.projects.length === 0) return;
