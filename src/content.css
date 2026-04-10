@@ -38,13 +38,14 @@
 }
 
 .gcal-tracker-pills {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 8px;
+  align-items: start;
 }
 
 .gcal-tracker-pills--flat {
-  flex-direction: row;
+  display: flex;
   flex-wrap: wrap;
 }
 
@@ -71,19 +72,15 @@
 }
 
 .gcal-tracker-group-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 2px 0;
+  display: contents;
 }
 
 .gcal-tracker-group-label {
   font-size: 11px;
   color: #80868b;
   font-weight: 500;
-  min-width: 70px;
   padding-top: 5px;
-  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .gcal-tracker-group-label-other {
