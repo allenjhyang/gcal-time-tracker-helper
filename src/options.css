@@ -113,7 +113,7 @@ button:hover { background: #1557b0; }
 }
 .group-header:active { cursor: grabbing; }
 .group-header.dragging { opacity: 0.4; }
-.group-header.drag-over { border-top: 2px solid #1a73e8; }
+.group-header.drag-over { background: #e8f0fe; }
 
 .group-uncategorized {
   background: #fffbe6;

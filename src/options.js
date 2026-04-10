@@ -95,31 +95,19 @@ function renderGroups(updatedGroups) {
       e.preventDefault();
       e.stopPropagation();
       header.classList.remove('drag-over');
-      console.log('[drag] DROP on header:', group.name, '| dragType:', dragType, '| dragSourceGroupId:', dragSourceGroupId, '| dragSourceGroupIndex:', dragSourceGroupIndex);
       if (dragType === 'group' && dragSourceGroupIndex !== null) {
-        if (isUncategorized || dragSourceGroupIndex === groupIndex) {
-          console.log('[drag] group drop rejected: isUncategorized=', isUncategorized, 'same index=', dragSourceGroupIndex === groupIndex);
-          return;
-        }
+        if (isUncategorized || dragSourceGroupIndex === groupIndex) return;
         const [moved] = groups.splice(dragSourceGroupIndex, 1);
         let targetIdx = groupIndex;
         if (dragSourceGroupIndex < groupIndex) targetIdx--;
         groups.splice(targetIdx, 0, moved);
-        console.log('[drag] group reordered, saving...');
         saveGroups(() => renderGroups());
       } else if (dragType === 'project' && dragSourceGroupId !== null) {
         const srcGroup = groups.find(g => g.id === dragSourceGroupId);
-        console.log('[drag] project drop: srcGroup=', srcGroup?.id, 'targetGroup=', group.id, 'same?', srcGroup?.id === group.id);
-        if (!srcGroup || srcGroup.id === group.id) {
-          console.log('[drag] project drop rejected: no srcGroup or same group');
-          return;
-        }
+        if (!srcGroup || srcGroup.id === group.id) return;
         const [movedProject] = srcGroup.projects.splice(dragSourceProjectIndex, 1);
         group.projects.push(movedProject);
-        console.log('[drag] project moved, saving...');
         saveGroups(() => renderGroups());
-      } else {
-        console.log('[drag] drop fell through — no matching condition');
       }
     });
 
@@ -209,10 +197,8 @@ function renderGroups(updatedGroups) {
         row.classList.add('dragging');
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('text/plain', '');
-        console.log('[drag] dragstart project:', projectName, 'from group:', group.id, 'index:', projectIndex);
       });
       row.addEventListener('dragend', () => {
-        console.log('[drag] dragend project — dragType was:', dragType, 'dragSourceGroupId was:', dragSourceGroupId);
         row.classList.remove('dragging');
         groupListEl.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
         dragType = null;
@@ -231,7 +217,6 @@ function renderGroups(updatedGroups) {
         e.preventDefault();
         e.stopPropagation();
         row.classList.remove('drag-over');
-        console.log('[drag] DROP on project row:', projectName, 'in group:', group.id, '| dragType:', dragType);
         if (dragType === 'project' && dragSourceGroupId !== null) {
           const srcGroup = groups.find(g => g.id === dragSourceGroupId);
           if (!srcGroup) return;
