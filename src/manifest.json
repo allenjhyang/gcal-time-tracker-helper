@@ -3,6 +3,7 @@
   "name": "GCal Time Tracker Helper",
   "version": "1.0.0",
   "description": "Quick-create time tracking events on Google Calendar",
+  "homepage_url": "https://github.com/allenjhyang/gcal-time-tracker-helper",
   "permissions": [
     "storage"
   ],
