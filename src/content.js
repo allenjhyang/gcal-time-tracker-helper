@@ -3,6 +3,7 @@
 let currentTracker = null;
 let summarySection = null;
 let summaryCollapsed = false;
+let cachedCalendar = null; // { name, encodedId, color } — survives GCal virtualizing the sidebar
 let weekObserver = null;
 let navObserver = null;
 let lastDateHeader = '';
@@ -67,6 +68,38 @@ function findCalendarByName(calendarName) {
   return null;
 }
 
+function getCalendar(calendarName, persistedMeta) {
+  // Resolve a calendar (encodedId + color) by name, tolerating GCal virtualizing
+  // the sidebar list: when the window is short, off-screen "My calendars" rows are
+  // removed from the DOM, so a live lookup fails even though the calendar is valid.
+  //
+  // Resolution order: live sidebar row → in-memory cache → value persisted in
+  // chrome.storage from a previous resolution. The persisted copy is what lets the
+  // color dot and the popup's calendar selection work on a short window that has
+  // never been scrolled to bring the row into the DOM.
+  if (!calendarName) return null;
+
+  const live = findCalendarByName(calendarName);
+  if (live) {
+    cachedCalendar = { name: calendarName, ...live };
+    // Persist so future sessions/loads work without the row being rendered
+    if (!persistedMeta || persistedMeta.name !== calendarName ||
+        persistedMeta.encodedId !== live.encodedId || persistedMeta.color !== live.color) {
+      chrome.storage.sync.set({ calendarMeta: cachedCalendar });
+    }
+    return live;
+  }
+
+  if (cachedCalendar && cachedCalendar.name === calendarName) return cachedCalendar;
+
+  if (persistedMeta && persistedMeta.name === calendarName) {
+    cachedCalendar = persistedMeta;
+    return persistedMeta;
+  }
+
+  return null;
+}
+
 function getContrastColor(bgColor) {
   // Parse rgb(r, g, b) and compute luminance to pick black or white text
   const match = bgColor.match(/(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
@@ -77,7 +110,7 @@ function getContrastColor(bgColor) {
 }
 
 function injectTracker(popup) {
-  chrome.storage.sync.get({ groups: null, projects: null, calendarName: '' }, (data) => {
+  chrome.storage.sync.get({ groups: null, projects: null, calendarName: '', calendarMeta: null }, (data) => {
     const groups = migrateToGroups(data);
     if (!data.groups) {
       chrome.storage.sync.set({ groups }, () => chrome.storage.sync.remove('projects'));
@@ -90,8 +123,9 @@ function injectTracker(popup) {
     const scrollable = popup.querySelector('[data-bubble-scrollable-root]');
     const container = scrollable || popup;
 
-    // Look up the calendar by name in the sidebar
-    const calendar = calendarName ? findCalendarByName(calendarName) : null;
+    // Look up the calendar by name in the sidebar (falls back to cached/persisted
+    // metadata so it works even when a short window has kept the row out of the DOM)
+    const calendar = getCalendar(calendarName, data.calendarMeta);
     const calColor = calendar?.color || null;
     const textColor = calColor ? getContrastColor(calColor) : null;
 
@@ -459,13 +493,13 @@ function showLoading(body) {
   body.appendChild(msg);
 }
 
-function refreshSummary(isRetry) {
+function refreshSummary() {
   if (!summarySection || !document.body.contains(summarySection)) return;
 
   const body = summarySection.querySelector('.tts-body');
   if (!body) return;
 
-  chrome.storage.sync.get({ groups: null, projects: null, calendarName: '', summaryCollapsed: false }, (data) => {
+  chrome.storage.sync.get({ groups: null, projects: null, calendarName: '', summaryCollapsed: false, calendarMeta: null }, (data) => {
     const groups = migrateToGroups(data);
     if (!data.groups) {
       chrome.storage.sync.set({ groups }, () => chrome.storage.sync.remove('projects'));
@@ -495,37 +529,14 @@ function refreshSummary(isRetry) {
       return;
     }
 
-    // Calendar may not be in DOM yet — show loading and retry
-    const calendar = findCalendarByName(settings.calendarName);
-    if (!calendar) {
-      if (!isRetry) {
-        showLoading(body);
-        // Retry a few times as sidebar may still be rendering
-        let retries = 0;
-        const retryInterval = setInterval(() => {
-          retries++;
-          if (retries > 10) {
-            clearInterval(retryInterval);
-            body.innerHTML = '';
-            const msg = document.createElement('div');
-            msg.className = 'tts-warning';
-            msg.textContent = `Calendar "${settings.calendarName}" not found in sidebar`;
-            body.appendChild(msg);
-            return;
-          }
-          const cal = findCalendarByName(settings.calendarName);
-          if (cal) {
-            clearInterval(retryInterval);
-            const results = scanWeeklyEvents(settings.calendarName, allProjects);
-            renderSummaryBody(body, results, cal.color, settings.groups);
-          }
-        }, 300);
-      }
-      return;
-    }
-
+    // The week's totals come from the event chips on the grid (filtered by
+    // calendar NAME parsed from each chip's screen-reader text), so the summary
+    // does NOT depend on the calendar being present in the sidebar. The sidebar
+    // lookup is only used for the colored dot, and getCalendar() falls back to a
+    // cached color when a short window has virtualized the row out of the DOM.
+    const calendar = getCalendar(settings.calendarName, data.calendarMeta);
     const results = scanWeeklyEvents(settings.calendarName, allProjects);
-    renderSummaryBody(body, results, calendar.color, settings.groups);
+    renderSummaryBody(body, results, calendar?.color || null, settings.groups);
   });
 }
 
@@ -638,7 +649,15 @@ function setupSummaryObservers() {
   let debounceTimer = null;
   let lastUrl = location.href;
 
-  const observer = new MutationObserver(() => {
+  const observer = new MutationObserver((mutations) => {
+    // Ignore mutations that occur entirely within our own injected summary UI.
+    // Re-rendering the summary body mutates the DOM, which would otherwise
+    // retrigger this observer in a feedback loop (the Calculating…/error flicker).
+    if (summarySection && document.body.contains(summarySection) &&
+        mutations.every(m => summarySection.contains(m.target))) {
+      return;
+    }
+
     // Check for URL change (week navigation)
     const urlChanged = location.href !== lastUrl;
     if (urlChanged) lastUrl = location.href;
