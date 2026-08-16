@@ -1,12 +1,28 @@
-# GCal Time Tracker Helper
+# Google Calendar Time Tracker Helper
 
 A Chrome extension that turns Google Calendar into a lightweight time tracker.
 
-If you already block out your work on a dedicated calendar, this removes the two annoying parts: typing the same project names over and over, and having no idea where the week actually went. It adds one-click project buttons to the event creation popup, and a running weekly total to the sidebar.
+**No account. No backend. No subscription. No tracking, analytics, or telemetry of any kind.**
 
-No account, no backend, no subscription. Everything happens locally in your browser.
+## Why I built this
 
-<!-- TODO: add a screenshot or GIF here — the quick-create pills and the sidebar summary -->
+I'm a consultant, so I need to know where my hours actually went. But every time tracking tool I tried was either overkill, or another subscription, or just one more app I'd forget to open. I already live in Google Calendar and I was already blocking out my work there — I just didn't want to retype the same project names a dozen times a day, or do arithmetic on my own week.
+
+So I built this. It's a small utility: one-click buttons for the projects I track, and a running weekly total in the GCal sidebar. That's it.
+
+It started as a fun vibe coding project, and it turned out small enough to read end-to-end in a sitting — plus it transmits no data outside my own Chrome and Google account. So I figured I'd open-source it in case it's useful to someone else.
+
+## Demo
+
+<!-- TODO: embed the walkthrough video here.
+     GitHub renders MP4/MOV uploaded directly to a release or issue — drag the file into any
+     GitHub comment box, then paste the resulting URL on its own line below.
+     For a YouTube video, use a linked thumbnail instead:
+     [![Watch the walkthrough](https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg)](https://youtu.be/VIDEO_ID) -->
+
+*A short video walkthrough is coming — check back shortly.*
+
+<!-- TODO: add a screenshot or GIF of the quick-create pills and the sidebar summary -->
 
 ## Features
 
@@ -50,17 +66,17 @@ Worth understanding, because it determines whether your totals are right:
 
 ## Privacy
 
-There is no backend, no analytics, no telemetry, and no network code of any kind — you can verify this yourself; the extension is about 1,500 lines of vanilla JavaScript with no dependencies and no build step, and `src/` contains no `fetch`, `XMLHttpRequest`, or similar calls.
+**There is no backend, no analytics, no telemetry, no tracking, and no account to create.** There is no network code in this extension at all — you can verify that yourself in about a minute. It's roughly 1,500 lines of vanilla JavaScript with no dependencies and no build step, and `src/` contains no `fetch`, no `XMLHttpRequest`, no `sendBeacon`, and no third-party scripts. Nothing is sent to me, because there is nowhere for it to be sent.
 
-What the extension touches:
+What the extension does touch:
 
 - **It reads the Google Calendar page.** The content script reads the rendered calendar DOM — including your event titles — to compute the weekly totals. This happens locally in the page and is never transmitted anywhere.
 - **It stores your settings in `chrome.storage.sync`.** That means your project names, group names, and calendar name sync across Chrome profiles signed into **your own** Google account, the same way your bookmarks do. They go to Google, not to me or to any third party. If you'd rather they didn't sync at all, change `chrome.storage.sync` to `chrome.storage.local` in `src/content.js` and `src/options.js`.
-- **Permissions.** The extension requests only `storage`, and host access limited to `https://calendar.google.com/*`. It cannot see any other site you visit.
+- **Permissions.** The extension requests only `storage`, plus host access limited to `https://calendar.google.com/*`. **It cannot see any other site you visit.**
 
 ## Limitations
 
-This extension works by reading and manipulating Google Calendar's rendered DOM — there's no Google Calendar API involved, which is what keeps it free of OAuth, backends, and setup. The tradeoff is that **Google reships that UI regularly, and when they do, this will break.** Expect that.
+This extension works by reading and manipulating Google Calendar's rendered DOM — there's no Google Calendar API involved, which is exactly what keeps it free of OAuth, backends, and setup. The tradeoff is that **Google reships that UI regularly, and when they do, this will break.** Expect that.
 
 If it stops working after a Google Calendar update, please open an issue with what broke, or send a PR — the DOM selectors are concentrated in `src/content.js`.
 
@@ -89,6 +105,14 @@ No build step. Edit files in `src/`, then hit the reload icon on `chrome://exten
 ## Contributing
 
 Issues and pull requests are welcome, especially fixes for Google Calendar DOM changes. There's no test suite — please describe what you tested manually.
+
+## Support this project
+
+This is free and always will be — there's nothing to subscribe to and no paid tier. If it saved you some time and you feel like saying thanks, you can buy me a coffee:
+
+<a href="https://www.buymeacoffee.com/allenjhyang"><img src="https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=&slug=allenjhyang&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff" alt="Buy me a coffee" height="40"></a>
+
+Entirely optional. Bug reports and PRs are worth just as much.
 
 ## License
 
