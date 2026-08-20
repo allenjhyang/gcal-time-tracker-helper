@@ -32,7 +32,31 @@ It started as a fun vibe coding project, and it turned out small enough to read 
 
 **Project groups.** Projects can be organized into named groups (e.g. "Client Work", "Internal") which are reflected in both the popup and the sidebar summary. Groups are optional — with a single group, everything renders as one flat list.
 
-## Install
+## Install - for non-developers
+
+You don't need Git, a terminal, or any developer tools — just Chrome and about two minutes. This extension isn't on the Chrome Web Store, so Chrome installs it from a folder on your computer instead.
+
+1. **Download the extension.** [Click here to download the .zip](https://github.com/allenjhyang/gcal-time-tracker-helper/raw/main/gcal-time-tracker-helper-extension-1-0-1.zip). It'll land in your Downloads folder.
+2. **Unzip it.** Double-click the downloaded file (Mac), or right-click it and choose **Extract All...** (Windows). You'll end up with a folder named `gcal-time-tracker-helper-extension-1-0-1` containing a folder called `src`.
+3. **Move the folder somewhere permanent.** Drag it out of Downloads and into somewhere you won't clean out later — your Documents folder is fine. Chrome loads the extension from this folder every time it starts, so if you delete or move it later, the extension stops working.
+4. **Open Chrome's extensions page.** Copy `chrome://extensions` into Chrome's address bar and press Enter. (Clicking a link to it won't work — Chrome only lets you type it.)
+5. **Turn on Developer mode.** There's a toggle in the top-right corner of that page. Flip it on. This just means "let me install an extension from a folder" — you don't have to do anything developer-y.
+6. **Click "Load unpacked."** A button appears in the top-left after step 5. Click it, and a file picker opens.
+7. **Select the `src` folder.** Navigate into the folder you unzipped, then select the **`src`** folder inside it — not the outer folder. On Mac, single-click `src` to highlight it and click **Select**; on Windows, click into `src` and click **Select Folder**.
+
+That's it. The extension is installed and will stay installed. Now go to [Setup](#setup) to tell it which calendar and projects to use.
+
+A few things you might see along the way, all normal:
+
+- Chrome shows a **"Disable developer mode extensions"** warning each time it starts. Click the X to dismiss it. The extension keeps working.
+- If you see a `__MACOSX` folder next to `src` after unzipping, ignore it — it's a harmless macOS leftover.
+- If Chrome says the manifest is missing or the folder is invalid, you selected the wrong folder. Go back to step 7 and pick the `src` folder specifically.
+
+**To update later**, download the new .zip, unzip it, replace your old folder with the new one, then click the ↻ reload icon on the extension's card at `chrome://extensions`.
+
+**To uninstall**, click **Remove** on the extension's card at `chrome://extensions`, then delete the folder.
+
+## Install - for developers
 
 This extension isn't on the Chrome Web Store. Install it unpacked:
 

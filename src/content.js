@@ -540,16 +540,32 @@ function refreshSummary() {
   });
 }
 
-function findTimeInsightsSection() {
-  // Find the "Time Insights" native section by its wrapper class .HTosoc
-  // which contains a heading with text "Time Insights" in .mqTdDf
-  const sections = document.querySelectorAll('.HTosoc');
-  for (const section of sections) {
-    const title = section.querySelector('.mqTdDf');
-    if (title && title.textContent.trim() === 'Time Insights') {
-      return section;
-    }
+function findSidebar() {
+  // The mini month navigator is the one element in the leftnav with a real id
+  // (everything else is obfuscated class names), so use its parent as the
+  // sidebar container.
+  const miniMonth = document.getElementById('drawerMiniMonthNavigator');
+  return miniMonth ? miniMonth.parentElement : null;
+}
+
+function findSummaryAnchor() {
+  // We insert the summary directly above the calendar list, which is where the
+  // native "Time Insights" section sits. Time Insights is not provisioned on
+  // every account (e.g. Workspace Business Starter), where GCal still renders
+  // its container but leaves it empty — so match the container, never its
+  // heading text, and fall back to the calendar list itself.
+  const sidebar = findSidebar();
+  if (!sidebar) return null;
+
+  const insightsSlot = sidebar.querySelector('.HTosoc:not(#gcal-tts)');
+  if (insightsSlot) return insightsSlot;
+
+  // Locate the calendar list by structure (it holds the calendar rows) rather
+  // than by its "Calendar list" heading, which is localized.
+  for (const child of sidebar.children) {
+    if (child.querySelector('[data-id] .toUqff')) return child;
   }
+
   return null;
 }
 
@@ -635,11 +651,11 @@ function injectSummarySection() {
   // Already injected and still in DOM
   if (summarySection && document.body.contains(summarySection)) return true;
 
-  const timeInsights = findTimeInsightsSection();
-  if (!timeInsights || !timeInsights.parentElement) return false;
+  const anchor = findSummaryAnchor();
+  if (!anchor || !anchor.parentElement) return false;
 
   summarySection = createSummarySection();
-  timeInsights.parentElement.insertBefore(summarySection, timeInsights);
+  anchor.parentElement.insertBefore(summarySection, anchor);
   refreshSummary();
   return true;
 }
