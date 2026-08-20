@@ -14,15 +14,10 @@ It started as a fun vibe coding project, and it turned out small enough to read 
 
 ## Demo
 
-<!-- TODO: embed the walkthrough video here.
-     GitHub renders MP4/MOV uploaded directly to a release or issue — drag the file into any
-     GitHub comment box, then paste the resulting URL on its own line below.
-     For a YouTube video, use a linked thumbnail instead:
-     [![Watch the walkthrough](https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg)](https://youtu.be/VIDEO_ID) -->
 
-*A short video walkthrough is coming — check back shortly.*
 
-<!-- TODO: add a screenshot or GIF of the quick-create pills and the sidebar summary -->
+https://github.com/user-attachments/assets/3e7a6060-c90a-4595-a78f-e9352470f088
+
 
 ## Features
 
